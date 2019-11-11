@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>图片上传及显示页</title>
+    <link rel="stylesheet" href="css/photo.css">
+</head>
+
+<body>
+    <!-- 展示相关 -->
+    <div class="container">
+        <div class="photoHeader">
+            <div class="imgContainer">
+                <img class="photoName" src="img/1.jpg" />
+            </div>
+            <div class="btnContainer">
+                <span class="photoTitle">相册名称</span>
+                <button class="mybtn">上传照片</button>
+            </div>
+        </div>
+
+        <div class="photoContainer">
+            <div class="photoItem">
+                <img src="img/Home.png" />
+                <span>
+                    home
+                </span>
+            </div>
+        </div>
+    </div>
+    <!-- 上传相关 -->
+    <div class="masking">
+        <div class="addPhotoContainer"></div>
+        <div class="addController">
+            <h3 class="addTitle">上传照片-普通上传(H5)<span class="close">╳</span></h3>
+            <div class="photoTitles">
+                <span class="uploadTo">上传到</span>
+                <div class="photoSelect">
+                    <img class="showPhoto" src="img/1.jpg" />
+                    相册名称
+                </div>
+            </div>
+
+            <!-- 上传按钮 -->
+            <div class="showContainer">
+                <div class="uploadContainer">
+                    <span class="fileinput-button">
+                        <span>上传图片</span>
+                        <input class="imgFile" type="file" name="" multiple="multiple" />
+                    </span>
+                    <span class="hint">
+                        按住Ctrl可多选
+                    </span>
+                </div>
+            </div>
+
+            <!-- 显示待上传图片  -->
+            <div class="loadContainer">
+                <div class="wantUpload">
+                    <!-- <div class="uploadPhotoItem">
+                        <span class="myProgress">
+                            <span class="plan"></span>
+                            30%
+                        </span>
+                        <img src="img/1.jpg" />
+                        <span class="pictureName">
+                            home
+                        </span>
+                    </div> -->
+                </div>
+                <div class="addStyle">
+                    <span class="fileinput-add">
+                        <span></span>
+                        <input class="imgFile-add" type="file" multiple="multiple" />
+                    </span>
+                </div>
+                <!-- 开始上传按钮 -->
+                <div class="bottomStyle">
+                    <span class="uploadBtn">开始上传</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+        {
+            let imgArr = [];//  添加图片时候放到数组里，上传时候才能知道谁是谁
+            let uploadedNum = 0;//已上传图片数量
+
+            //  点击上次照片按钮后显示对话框
+            document.querySelector('.mybtn').onclick = function() {
+                document.querySelector('.masking').style.display = 'block';
+            }
+
+            //  点击对话框x后隐藏对话框
+            document.querySelector(".close").onclick = function () {
+                document.querySelector(".masking").style.display = "none";
+            }
+
+            // 监听增加图片按钮
+            document.querySelector('.imgFile-add').onchange = function() {
+                Array.from(this.files).forEach(file => {
+                    let img = new RenderImg(file);
+                    img.createImgHtml();
+                    imgArr.push(img);
+                })
+            }
+
+            //  onchange事件，有文件上传时触发
+            document.querySelector('.imgFile').onchange = function() {
+                //  隐藏上传按钮界面，显示呈现界面
+                document.querySelector('.uploadContainer').style.display = 'none';
+                document.querySelector('.loadContainer').style.display = 'block';
+                // this.files是图片对象数组
+                // console.log(this.files);
+                // 将对象数组转换成数组才能用forEach，用扩展运算符也行
+                Array.from(this.files).forEach(file => {
+                    // 对每个file对象处理
+                    let img = new RenderImg(file);
+                    img.createImgHtml();
+                    imgArr.push(img);
+                })
+            }
+
+            // 上传图片按钮监听
+            document.querySelector('.uploadBtn').onclick = function() {
+                // console.log(imgArr);
+                async function loopUpload() {
+                    // 这里用for，不能用forEach，因forEach每次用回调函数，await就不在一个async函数内
+                    for(let i = 0; i < imgArr.length; i++) {
+                        // imgArr内每个对象都是RenderImg实例
+                        await imgArr[i].uploadImg();
+                        uploadedNum++;
+                    }
+                }
+                // 记得调用
+                loopUpload();
+                // 若所有图片已传完，显示用户所有图片
+                if (uploadedNum >= imgArr.length) {
+                    personalImg();
+                }
+            }
+
+
+            // 图片类，方法：呈现及上传
+            class RenderImg {
+                constructor(file) {
+                    this.file = file;
+                    this.element = '';
+                }
+                // 呈现图片
+                createImgHtml() {
+                    let fileReader = new FileReader();
+                    // 将file转成base64编码，转换后可给img.src直接用
+                    fileReader.readAsDataURL(this.file);
+                    // onload函数内要用外部的this,但函数内this是指向fileReader的
+                    let _this = this;
+                    // 该事件在读取操作完成时触发
+                    fileReader.onload = function() {
+                        // result是file base64编码的结果,this要指向fileReader
+                        // console.log(this.result);
+                        let uploadPhotoItem = document.createElement('div');
+                        uploadPhotoItem.classList.add('uploadPhotoItem');
+                        uploadPhotoItem.innerHTML= `<span class="myProgress">
+                                                    <span class="plan"></span>
+                                                    <span class="progressValue">30%</span>
+                                                    </span>
+                                                    <img src=${this.result} />
+                                                    <span class="pictureName">
+                                                        ${_this.file.name}
+                                                    </span>`;
+                        document.querySelector('.wantUpload').appendChild(uploadPhotoItem);
+                        // 将uploadPhotoItem和this绑定，后面upload才能用
+                        _this.element = uploadPhotoItem;
+                    }
+                }
+                // 上传图片
+                uploadImg() {
+                    return new Promise( resolve => {
+                            let xhr = new XMLHttpRequest();
+                            xhr.open('post', '/upload', true);
+                             // 如果有token就带上token
+                            if (localStorage.getItem('token')) {
+                            // token设在头部带到后端，Bearer类似声明
+                            xhr.setRequestHeader('Authorization', 'Bearer ' + localStorage.getItem('token'));
+                            }
+                            let form = new FormData();
+                            form.append('img', this.file);
+                            // 正在上传时不断触发，适合放进度条更新
+                            xhr.upload.onprogress = event => {
+                                // console.log(this.element);
+                                this.element.querySelector('.myProgress').style.display = 'block';
+                                // event.loaded的当前进度，event.total是总进度
+                                let percent = Math.round(event.loaded / event.total)*100 + '%';
+                                // 必须用this.element不能用document，为了进度条更新时分清哪个img
+                                // 在createImgHtml方法里绑定了this和img对象
+                                this.element.querySelector('.plan').style.width = percent;
+                                this.element.querySelector('.progressValue').innerHTML = percent;
+                                // 文件上传完成触发resolve
+                                if (event.loaded >= event.total) {
+                                    resolve();
+                                }
+                            }
+                            xhr.send(form);
+                        } 
+                    )
+                    
+                }
+            }
+
+            // 请求拦截器，每次请求前都会进入，这里加token就不用每个axios请求都加一遍了-代码复用
+            // config就是methond,url,data这些
+            axios.interceptors.request.use(config => {
+                if (localStorage.getItem('token')) {
+                        config.headers.withCredentials = true;
+                        // config.headers.Authorization = 'Bearer ' + localStorage.getItem('token');
+                    }
+                return config;
+            });
+
+            // 响应拦截器，每次获取返回数据后都会进入，这里可以catch error
+            axios.interceptors.response.use(response => {
+                return response;
+            }, error => {
+                if (error.response.status === 401) {
+                    // 跳转到登录页
+                    window.location.href = '/login.html';
+                }
+                return error;
+            });
+
+            // 用户登录后页面显示自己的图片
+            function personalImg() {
+                axios.get('/getPhotoData',{
+                    // headers : {
+                    //     withCredentials : true,
+                    //     Authorization : 'Bearer ' + localStorage.getItem('token')
+                    // }
+                })
+                    .then(response => {
+                        // console.log(response);
+                        let imgHtml = '';
+                        response.data.forEach(item => {
+                            imgHtml += `<div class="photoItem">
+                                            <img src="${item.imgPath}" />
+                                            <span>
+                                                ${item.imgName}
+                                            </span>
+                                        </div>`
+                        });
+                        document.querySelector('.photoContainer').innerHTML = imgHtml;
+                    })
+                    .catch(error => {
+                        console.log(error);
+                    })
+            }
+            // 进入photo界面就调用
+            personalImg();
+
+        }
+    </script>
+</body>
+
+</html>

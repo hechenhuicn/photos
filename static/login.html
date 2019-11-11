@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <link rel="stylesheet" href="css/login.css" />
+  <title>登录页</title>
+</head>
+
+<body>
+  <div class="loginContainer">
+    <h1>登录</h1>
+    <form action="/checkUser" method="post">姓名：
+      <input class="inputStyle" id="username" type="text" name="username" /><br />密码：
+      <input class="inputStyle" id="pwd" type="password" name="pwd" /><br />
+      <input class="loginStyle" id="submit" type="submit" value="登录" />
+    </form>
+  </div>
+
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script>
+  {
+        document.querySelector('#submit').onclick = function () {
+        let username = document.querySelector('#username').value;
+        let pwd = document.querySelector('#pwd').value;
+        // 实际项目pwd经过加密再传(如MD5)
+        axios.post('/checkUser', {
+            username : username,
+            pwd : pwd
+        }).then(response => {
+            console.log(response.data);
+            if (response.data.token) {
+                // 返还值存在token则存起来
+                localStorage.setItem('token', response.data.token);
+            }
+            if(response.data.status === 1) {
+              window.location.href = '/photo.html';
+            }
+        }).catch(error => {
+            console.log(error);
+        })
+    }
+  }
+  </script>
+</body>
+
+</html>
